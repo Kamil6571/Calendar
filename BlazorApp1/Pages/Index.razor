@@ -1,0 +1,67 @@
+﻿@using System
+@using System.Net.Http
+@using System.Text.Json
+@using System.Collections.Generic
+
+@page "/"
+
+
+<h3>Kalendarz ze świętami</h3>
+
+@if (publicHolidays != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Święto</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var holiday in publicHolidays)
+            {
+                <tr>
+                    <td>@holiday.Date.ToShortDateString()</td>
+                    <td>@holiday.LocalName</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>Wystąpił problem podczas pobierania danych ze świąt.</p>
+}
+
+@code {
+    private List<PublicHoliday> publicHolidays;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var jsonSerializerOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        using var httpClient = new HttpClient();
+        using var response = await httpClient.GetAsync("https://date.nager.at/api/v3/publicholidays/2022/DK");
+        if (response.IsSuccessStatusCode)
+        {
+            using var jsonStream = await response.Content.ReadAsStreamAsync();
+            publicHolidays = await JsonSerializer.DeserializeAsync<List<PublicHoliday>>(jsonStream, jsonSerializerOptions);
+        }
+    }
+
+    class PublicHoliday
+    {
+        public DateTime Date { get; set; }
+        public string LocalName { get; set; }
+        public string Name { get; set; }
+        public string CountryCode { get; set; }
+        public bool Fixed { get; set; }
+        public bool Global { get; set; }
+        public string[] Counties { get; set; }
+        public int? LaunchYear { get; set; }
+        public string[] Types { get; set; }
+    }
+}
+
+
+
